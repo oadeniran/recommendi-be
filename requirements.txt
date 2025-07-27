@@ -1,0 +1,16 @@
+pymongo==4.6.1
+fastapi==0.110.2
+uvicorn==0.20.0
+python-multipart
+dnspython==2.2.1
+certifi==2019.9.11
+gunicorn
+openai
+python-dotenv==1.0.0
+openapi-schema-pydantic==1.2.4
+tiktoken
+python-multipart
+uuid
+streamlit_chat
+beautifulsoup4
+geopy==2.4.1
