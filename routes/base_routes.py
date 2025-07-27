@@ -11,6 +11,40 @@ ENTITIES_FORMATTED = {
     'Places': 'places',
 }
 
+CATEGORIES_DATA = [
+    {
+        "name": "Movies",
+        "value": "Movies",
+        "label": "Tell us what kind of movie recommendations you are looking for",
+        "placeholder": "e.g., 'I just saw Romeo and Juliet, can you recommmend more movies like this..'",
+    },
+    {
+        "name": "Books",
+        "value": "Books",
+        "label": "Tell us what kind of book recommendations you are looking for",
+        "placeholder": "e.g., 'I just read The Great Gatsby, can you recommmend more books like this..'",
+    },
+    {
+        "name": "Places",
+        "value": "Places",
+        "label": "Tell us what kind of place recommendations you are looking for",
+        "placeholder": "e.g., 'I am looking for good restaurants in New York, can you recommmend some places..'",
+    },
+    {
+        "name": "TV Shows",
+        "value": "TV Shows",
+        "label": "Tell us what kind of TV show recommendations you are looking for",
+        "placeholder": "e.g., 'I just saw Breaking Bad, can you recommmend more shows like this..'",
+    },
+    # {
+    #     "name": "Destinations",
+    #     "value": "Destinations",
+    #     "label": "Tell us what kind of travel destination recommendations you are looking for",
+    #     "placeholder": "e.g., 'I am planning a trip to Europe, can you recommmend some destinations..'",
+    # },
+
+]
+
 router = APIRouter()
 
 @router.get("/available-entities", tags=["Recommendi APIs"])
@@ -19,7 +53,8 @@ async def get_available_entities():
     Get the list of available entities for recommendations.
     """
     return {
-        "entities": list(ENTITIES_FORMATTED.keys())
+        "categories_data": CATEGORIES_DATA,
+        'status_code': 200,
     }
 
 @router.post("/recommendations", tags=["Recommendi APIs"])
@@ -67,7 +102,7 @@ async def get_recommendations_by_details(session_id: str, recommendation_categor
         'session_id': session_id,
         'recommendation_category': ENTITIES_FORMATTED[recommendation_category],
         'user_message': user_message,
-        'selected_tag_id': selected_tag_id
+        'tag_id': selected_tag_id
     }, page=page)
 
     return recommendations

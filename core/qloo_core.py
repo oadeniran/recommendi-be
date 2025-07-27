@@ -137,6 +137,29 @@ def transform_movie_entity(entity):
         print(f"Error transforming movie entity: {e}")
         return 
 
+def _get_corrected_tag_id(tag_id, tag_type):
+    """
+    Correctly inserts 'place' into a tag ID if it's missing.
+    e.g., urn:tag:genre:restaurant -> urn:tag:genre:place:restaurant
+    """
+    if not tag_id or not tag_type:
+        return tag_id
+
+    id_parts = tag_id.split(':')
+    type_parts = tag_type.split(':')
+    
+    # Position where 'place' should be
+    insert_pos = len(type_parts)
+    
+    # Check if 'place' is already in the correct position
+    if len(id_parts) > insert_pos and id_parts[insert_pos] == 'place':
+        return tag_id # It's already correct, do nothing
+
+    # If not, insert 'place' and rebuild the ID
+    id_parts.insert(insert_pos, 'place')
+    return ':'.join(id_parts)
+
+
 def transform_place_entity(entity):
     """
     Transforms a single place entity dictionary, including hours and specialty dishes.
@@ -150,16 +173,16 @@ def transform_place_entity(entity):
     
     # Process main tags (genres, categories, amenities) from the top-level 'tags' key
     original_tags = entity.get('tags', [])
-    for tag in original_tags:
+    all_tags_to_process = original_tags + \
+                          properties.get('specialty_dishes', []) + \
+                          properties.get('good_for', [])
+    for tag in all_tags_to_process:
         tag_name = tag.get('name')
         tag_type = tag.get('type')
         tag_id = tag.get('id') or tag.get('tag_id')
         if tag_id is not None:
-            #add place just after the last occuremce of ":" in the tag Id text
-            split_tag_id = tag_id.split(':')
-            if len(split_tag_id) > 1 and split_tag_id[-1] != 'place':
-                split_tag_id.insert(-1, 'place') # insert 'place' before the last part
-                tag_id = ':'.join(split_tag_id)
+            corrected_id = _get_corrected_tag_id(tag_id, tag_type)
+            tag_id = corrected_id
 
 
         if not tag_name or not tag_type or not tag_id:
@@ -167,26 +190,6 @@ def transform_place_entity(entity):
 
         #if 'genre' in tag_type or 'category' in tag_type or 'amenity' in tag_type:
         if tag_name not in seen_names:
-            seen_names.add(tag_name)
-    
-        filtered_tags.append({"name": tag_name, "id": tag_id})
-
-    # Process additional tag-like fields from properties
-    special_dishes = properties.get('specialty_dishes', [])
-    good_for_tags = properties.get('good_for', [])
-
-    for tag in special_dishes + good_for_tags:
-        tag_name = tag.get('name')
-        tag_type = tag.get('type')
-        tag_id = tag.get('id') or tag.get('tag_id')
-        if tag_id is not None:
-            #add place just after the last occuremce of ":" in the tag Id text
-            split_tag_id = tag_id.split(':')
-            if len(split_tag_id) > 1 and split_tag_id[-1] != 'place':
-                split_tag_id.insert(-1, 'place') # insert 'place' before the last part
-                tag_id = ':'.join(split_tag_id)
-
-        if tag_name and tag_type and tag_id and tag_name not in seen_names:
             seen_names.add(tag_name)
             filtered_tags.append({"name": tag_name, "id": tag_id})
 
@@ -369,17 +372,17 @@ def get_qloo_search_recommendations(entity_name, recommendation_fetch_data, page
             if entity_name in ["movies", "tv_shows"]:
                 recommendation_entities += [
                     transform_movie_entity(entity)
-                    for entity in data.get("results", {}).get("entities", [])
+                    for entity in data.get("results", [])
                 ]
             elif entity_name == "books":
                 recommendation_entities += [
                     transform_book_entity(entity)
-                    for entity in data.get("results", {}).get("entities", [])
+                    for entity in data.get("results", [])
                 ]
             elif entity_name in ["destinations", "places"]:
                 recommendation_entities += [
                     transform_place_entity(entity)
-                    for entity in data.get("results", {}).get("entities", [])
+                    for entity in data.get("results", [])
                 ]
             backups_checked += 1
     print(f"Found {len(recommendation_entities)} recommendations for {entity_name} on page {page}")

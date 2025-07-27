@@ -1,7 +1,7 @@
 from core import qloo_core, llm_core
 import asyncio
 import random
-from utils import dict_to_string, get_all_location_details
+from utils import dict_to_string, get_all_location_details, clean_text
 from db import add_recommendation, get_recommendations_using_details, set_session_status_field, get_session_status_field
 from traceback import format_exc
 
@@ -220,6 +220,7 @@ async def enrich_and_save_recommendations(session_id, rec_category,recommendatio
                             **rec,
                             'session_id': session_id,
                             'user_message': user_query,
+                            'cleaned_user_message': clean_text(user_query),
                             'recommendation_category': rec_category,
                             'tag_id': tag_id,
                         }
@@ -258,6 +259,8 @@ async def get_recommendations_by_details(details, page=1):
     if not details:
         return []
     
+    print(f"Fetching recommendations by details: {details} on page {page}")
+    
     processing_status = await asyncio.to_thread(get_session_status_field,
         details.get('session_id'),
         details.get('recommendation_category'),
@@ -276,7 +279,7 @@ async def get_recommendations_by_details(details, page=1):
     )
 
     recommendations = await asyncio.to_thread(get_recommendations_using_details,details=details, page=page)
-    print(f"Recommendations fetched for session {details.get('session_id')}: {recommendations}")
+    # print(f"Recommendations fetched for session {details.get('session_id')}: {recommendations}")
 
     if recommendations and recommendations != {} and recommendations.get('start_next_set', False) == True:
         # If the flag to start next set is True then we need to generate more recommendations with same data

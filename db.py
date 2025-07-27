@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 from config import DB_URL, RECOMMENDATIONS_PER_PAGE
+from utils import clean_text
 
 db_client = MongoClient(DB_URL)
 db_conn = db_client['recommendi_db']
@@ -31,7 +32,7 @@ def get_recommendations_using_details(details, page=None):
     """
     query = {
         'session_id': details.get('session_id'),
-        "user_message": details.get('user_message'),
+        "cleaned_user_message": clean_text(details.get('user_message')),
         "recommendation_category": details.get('recommendation_category'),
         'tag_id': details.get('tag_id'),
     }
@@ -123,7 +124,7 @@ def set_session_status_field(session_id, recommendation_category, user_message, 
         None
     """
     query = {'session_id': session_id}
-    key = selected_tag_id if selected_tag_id else user_message
+    key = selected_tag_id if selected_tag_id else clean_text(user_message)
     field_path = f"{recommendation_category}.{key}.{field_key}"
 
     update = {
@@ -149,7 +150,7 @@ def get_session_status_field(session_id, recommendation_category, user_message, 
         Any or None: The field value if found, otherwise None.
     """
     query = {'session_id': session_id}
-    key = selected_tag_id if selected_tag_id else user_message
+    key = selected_tag_id if selected_tag_id else clean_text(user_message)
     field_path = f"{recommendation_category}.{key}.{field_key}"
 
     projection = {field_path: 1, '_id': 0}

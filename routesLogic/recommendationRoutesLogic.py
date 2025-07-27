@@ -12,23 +12,26 @@ async def generate_recommendations(recommendation_fetch_data: RecommendationFetc
     Returns:
         dict: A dictionary containing the recommendations and metadata.
     """
-    asyncio.create_task(recommednations.generate_alonis_qloo_powered_recommendations(
-        recommendation_fetch_data.session_id,
-        recommendation_fetch_data.selected_category,
-        recommendation_fetch_data.user_message,
-        recommendation_fetch_data.is_tags_only,
-        recommendation_fetch_data.selected_tag_id
-    ))
-    print("Recommendation generation task started in the background.")
-
-    recommendations = await get_recommendations_by_details({
+    details = {
         'session_id': recommendation_fetch_data.session_id,
         'recommendation_category': recommendation_fetch_data.selected_category,
         'user_message': recommendation_fetch_data.user_message,
         'selected_tag_id': recommendation_fetch_data.selected_tag_id,
         'is_tags_only': recommendation_fetch_data.is_tags_only,
         'tag_id': recommendation_fetch_data.selected_tag_id
-    })
+    }
+    recommendations, is_processing, error_message = await recommednations.get_recommendations_by_details(details, page=1)
+    if not recommendations and (is_processing == False or is_processing is None):
+        asyncio.create_task(recommednations.generate_alonis_qloo_powered_recommendations(
+            recommendation_fetch_data.session_id,
+            recommendation_fetch_data.selected_category,
+            recommendation_fetch_data.user_message,
+            recommendation_fetch_data.is_tags_only,
+            recommendation_fetch_data.selected_tag_id
+        ))
+        print("Recommendation generation task started in the background.")
+
+    recommendations = await get_recommendations_by_details(details=details, page=1)
     return recommendations
 
 async def get_recommendations_by_details(details: dict, page=1):

@@ -4,6 +4,7 @@ import requests
 from config import GOOGLE_API_KEY
 import json
 import re
+import unicodedata
 
 
 def dict_to_string(d, explanations=None, indent=0, normalize_text=False):
@@ -159,3 +160,25 @@ def clean_and_parse_json(input_string):
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON: {e}")
         return None
+
+def clean_text(text):
+    """
+    Normalize a string by removing all punctuation, whitespace, emojis,
+    and converting to lowercase.
+
+    Args:
+        text (str): The input string.
+
+    Returns:
+        str: The cleaned string.
+    """
+    if text is None:
+        return None
+    # Normalize Unicode (NFKD separates accents from letters)
+    text = unicodedata.normalize('NFKD', text)
+
+    # Remove all characters that are not alphanumeric (letters and digits)
+    # This handles: punctuation, emojis, symbols, whitespace, etc.
+    cleaned = re.sub(r'[^a-zA-Z0-9]', '', text)
+
+    return cleaned.lower()
