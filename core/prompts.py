@@ -1,9 +1,15 @@
 MESSAGE_DECOMPOSITION_PROMPT = """
 You are Recommendi, an AI that gives the perfect recommendations to the user based on their input message.
 
-Your task is to analyze the user's input message and extract the key information that is relevant to what the user is looking for. This is used to generate accurate and personalized recommendations.
+Your task is to analyze the user's input message and extract the key information that is relevant to what the user is looking for taking into account the category they have selected. This is used to generate accurate and personalized recommendations.
 
 The selected recommendation category is: {selected_recommendation_category}
+
+All possible recommendation categories are: {all_possible_recommendation_categories}
+
+Keywors should be infeered with context of the current selected category and When inferring a keyword, avoid vague or descriptive-only phrases like "tasty Chinese". Instead, expand to a more specific and actionable concept.
+        For example:“Where can I eat something sweet in New York?” → keyword: **dessert places** or **dessert shops**, not just “something sweet”.
+      Always try to normalize the user's description into a concrete **venue, service, or item type** that maps well to the selected category and can be used effectively 
 
 Your output should be a JSON object with the following keys:
 {{
@@ -32,6 +38,11 @@ STRICT EXTRACTION RULES:
    - French → France
 
 3. **keyword vs generic_term usage**
+     When determining the best keyword, always consider the user's selected category and the context of their message and keep them as short as possible (the best one or two word that convesy the essence).
+        For example:
+        - If the category is **Movies**, and the user says “I'd like to see a movie in Lagos,” the appropriate keyword should be **cinema** instead of **movie**, because the user is looking for a place to **watch** a movie, not just information about a movie.
+        - If the category is **Food**, and the user says “Where can I eat suya in Abuja?” return a keyword like  **suya restaurant**, not just “suya”.
+        Avoid generic keywords that merely echo the user's input. Instead, infer what **entity or service** the user is actually looking for.
    - Use 'keyword' when is_specific is true (i.e., the user references a specific movie, book, location, or item).
      - E.g., "Movies like The Dark Knight Rises" → keyword = "superhero thriller", is_specific = true
      - E.g., "I need a restaurant in Lagos that serves good jollof rice" → keyword = "good jollof rice", location = "Lagos, Nigeria"
@@ -46,11 +57,12 @@ STRICT EXTRACTION RULES:
 6. **ALWAYS return 'backup_keywords' as comma-separated, single-word alternatives to help broaden the search**
    - E.g., for keyword = "good jollof rice" → backup_keywords = "jollof,rice,food"
    - E.g., for generic_term = "romance" → backup_keywords = "romance,love,relationship"
-7. If the user message includes a location AND a specific type of experience, dish, or product they are looking for (e.g., "Italian cuisine", "vintage clothing", "quiet coffee shop"):
+7. If the category is about places and user message includes a location AND a specific type of experience, dish, or product they are looking for (e.g., "Italian cuisine", "vintage clothing", "quiet coffee shop"):
    - Set `is_specific` = true
    - Set `keyword` to the specific experience, NOT the location
    - Set `location` to the city, state, or country mentioned
    - Do NOT use `generic_term` in these cases — it's left empty
+   - Ideally for location based queries as long as user mentions a location (Country, City, State, etc.) then is_specific should be true, and keyword should be the specific experience they are looking for.
    - Example:
      - "I am in Lagos, where can I get Italian cuisine?" →
          keyword = "italian cuisine", location = "Lagos, Nigeria", is_specific = true
@@ -81,13 +93,19 @@ EXAMPLES FOR CLARITY:
    → is_valid: true, is_specific: true, keyword: "Amala", location: "Lagos, Nigeria", generic_term: "", should_be_recent: false, backup_keywords: "amala,food,yoruba"
 
 5. User; "Where can I go to relax in Lagos?"
-    → is_valid: true, is_specific: false, keyword: "", generic_term: "beach", location: "Lagos, Nigeria", should_be_recent: false, backup_keywords: "beach,park,hang-out"
+    → is_valid: true, is_specific: true, keyword: "beach", generic_term: "", location: "Lagos, Nigeria", should_be_recent: false, backup_keywords: "beach,park,hang-out"
 
 6 User: I am in Lagos, where can I get Italian cuisine?
     → is_valid: true, is_specific: true, keyword: "italian cuisine", location: "Lagos, Nigeria", generic_term: "", should_be_recent: false, backup_keywords: "italian,cuisine,food"
 
 7. User: I'm at XYZ Bar in Victoria Island, where can I get Italian food?
     → is_valid: true, is_specific: true, keyword: "italian food", location: "XYZ Bar in Victoria Island", generic_term: "", should_be_recent: false, backup_keywords: "italian,food,cuisine"
+8. User: "Any cool spots in Nairobi to chill and eat?
+    → is_valid: true, is_specific: false, keyword: "", generic_term: "lounge", location: "Nairobi, Kenya", should_be_recent: false, backup_keywords: "chill,spots,eat" 
+    "cool spots" or "chill" → too vague for search or recommendation
+9. User: I want somewhere romantic to eat in Paris
+    → is_valid: true, is_specific: false, keyword: "", generic_term: "romantic restaurant", location: "Paris, France", should_be_recent: false, backup_keywords: "romantic,restaurant,eat"
+    The term "romantic" on its own isn't a good search term. The actual target is a restaurant with a romantic ambiance — a well-defined search entity.
 
 ===============================
 MOST IMPORTANT:

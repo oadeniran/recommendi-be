@@ -59,6 +59,7 @@ async def generate_alonis_qloo_powered_recommendations(session_id, recommendatio
                 recommendation_fetch_data_for_user_message = await llm_core.get_recommendation_data_from_user_message(
                     user_message, 
                     recommendation_category, 
+                    all_possible_recommendation_categories=qloo_core.get_all_possible_recommendation_categories()
                 )
             else:
                 recommendation_fetch_data_for_user_message = recommendation_fetch_data

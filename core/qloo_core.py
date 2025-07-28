@@ -16,6 +16,15 @@ QLOO_HEADER = {
     'accept': 'application/json'
 }
 
+def get_all_possible_recommendation_categories():
+    """
+    Get all possible recommendation categories.
+    
+    Returns:
+        list: A list of all possible recommendation categories.
+    """
+    return list(ENTITIES.keys())
+
 def is_country_level(category):
     """
     Check if the category is country level.
