@@ -1,10 +1,11 @@
 from geopy.geocoders import GoogleV3
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import requests
-from config import GOOGLE_API_KEY
+from config import GOOGLE_API_KEY, COUNTRY_NAMES
 import json
 import re
 import unicodedata
+from countryinfo import CountryInfo
 
 
 def dict_to_string(d, explanations=None, indent=0, normalize_text=False):
@@ -76,33 +77,54 @@ def get_address_details(address):
 
         return country, country_code, county, state, state_abbr, zip_code
 
+def extract_country_from_text(text: str) -> str:
+    """
+    Extracts the country name from a text using regex and known country names.
+    Returns the country name if found, else empty string.
+    """
+    text_lower = text.lower()
+    
+    # Check for full word match for each known country
+    for country in COUNTRY_NAMES:
+        pattern = r'\b' + re.escape(country) + r'\b'
+        if re.search(pattern, text_lower):
+            return country.title()  # Capitalize for display/use
+
+    return text  # Return the original text if no country found
+
+def get_capital_for_country(country_name: str) -> str:
+    try:
+        country = CountryInfo(country_name)
+        return country.capital()
+    except:
+        return ""
+
 def geocode_address(address: str) -> dict:
     """
-    This function receives a string of text which is an address and
-    uses Google Maps API to identify the latitude and longitude of that address. Keep my API key safe and protected.
-    If you wanna know more, read about geocoding here: https://developers.google.com/maps/documentation/javascript/geocoding
-    Read about how geopy uses google Geocoder here https://snyk.io/advisor/python/geopy/functions/geopy.geocoders.GoogleV3
+    Geocode an address using Google Maps API.
+    If `country_level` is True, will attempt to geocode only to the country level.
     """
+
     geolocator = GoogleV3(api_key=GOOGLE_API_KEY)
+    print(f"Geocoding address: {address}")
+
     try:
         location = geolocator.geocode(address)
+
         if location:
-            return {"latitude": location.latitude, "longitude": location.longitude}
-            # return location.latitude, location.longitude
+            return {
+                "latitude": location.latitude,
+                "longitude": location.longitude
+            }
         else:
             print(f"Could not geocode address: {address}")
-            return {
-                "latitude": 47.751076, # Default to Washington State coordinates
-                "longitude": -120.740135
-            }
+            return {"latitude": 47.751076, "longitude": -120.740135}
+
     except (GeocoderTimedOut, GeocoderServiceError) as e:
         print(f"Geocoding error: {str(e)}")
-        return {
-                "latitude": 47.751076, # Default to Washington State coordinates
-                "longitude": -120.740135
-            }
+        return {"latitude": 47.751076, "longitude": -120.740135}
     
-def get_all_location_details(address):
+def get_all_location_details(address, country_level=False):
     """ This function receives a string of text which is an address and returns a dictionary with the following keys:
     - county: The county of the address
     - country: The country of the address
@@ -113,7 +135,13 @@ def get_all_location_details(address):
     It also returns the latitude and longitude of the address.
     """
     country, country_code, county, state, state_abbr, zip_code = get_address_details(address)
-    geocoded_address = geocode_address(address)
+    if country_level:
+        country_address = country or extract_country_from_text(address)
+        capital = get_capital_for_country(country_address)
+        address_to_geocode = f"{capital}, {country_address}" 
+    else:
+        address_to_geocode = address
+    geocoded_address = geocode_address(address_to_geocode)
     return {
         "county": county,
         "country": country,

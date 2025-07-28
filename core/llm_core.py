@@ -35,7 +35,7 @@ def get_llm_response(sys_prompt, user_prompt=None):
         print(f"Error getting LLM response: {e}")
         return None
     
-async def get_system_prompt_for_user_message(selected_recommendation_category, all_possible_recommendation_categories,):
+async def get_system_prompt_for_user_message(selected_recommendation_category):
     """
     Get the system prompt for the specified system.
     
@@ -47,12 +47,11 @@ async def get_system_prompt_for_user_message(selected_recommendation_category, a
         str: The system prompt.
     """
     system_prompt = prompts.MESSAGE_DECOMPOSITION_PROMPT.format(
-        selected_recommendation_category=selected_recommendation_category,
-        all_categories=all_possible_recommendation_categories,
+        selected_recommendation_category=selected_recommendation_category
     )
     return system_prompt
 
-async def get_recommendation_data_from_user_message(user_message, selected_recommendation_category, all_possible_recommendation_categories):
+async def get_recommendation_data_from_user_message(user_message, selected_recommendation_category):
     """
     Get recommendation data from the user's message.
     
@@ -65,7 +64,7 @@ async def get_recommendation_data_from_user_message(user_message, selected_recom
         dict: The recommendation data extracted from the user's message.
     """
     sys_prompt = await get_system_prompt_for_user_message(
-        selected_recommendation_category, all_possible_recommendation_categories
+        selected_recommendation_category
     )
     
     llm_response = get_llm_response(sys_prompt, user_message)

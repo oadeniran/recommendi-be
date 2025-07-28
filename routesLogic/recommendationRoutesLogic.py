@@ -21,7 +21,7 @@ async def generate_recommendations(recommendation_fetch_data: RecommendationFetc
         'tag_id': recommendation_fetch_data.selected_tag_id
     }
     recommendations, is_processing, error_message = await recommednations.get_recommendations_by_details(details, page=1)
-    if not recommendations and (is_processing == False or is_processing is None):
+    if (not recommendations) and (is_processing == False or is_processing is None):
         asyncio.create_task(recommednations.generate_alonis_qloo_powered_recommendations(
             recommendation_fetch_data.session_id,
             recommendation_fetch_data.selected_category,
@@ -48,7 +48,7 @@ async def get_recommendations_by_details(details: dict, page=1):
     trials = 0
     while not recommendations:
         recommendations, is_processing, error_message = await recommednations.get_recommendations_by_details(details, page=page)
-        if trials >= 5:
+        if trials >= 3:
             # Confirm is processing status is True to keep waiting else break
             if not is_processing:
                 break

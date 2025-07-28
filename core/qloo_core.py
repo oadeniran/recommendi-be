@@ -2,7 +2,6 @@ from config import QLOO_API_URL, QLOO_API_KEY
 import requests
 import re
 from bs4 import BeautifulSoup
-from utils import get_all_location_details
 
 ENTITIES= {
     "movies": "urn:entity:movie",
@@ -17,11 +16,33 @@ QLOO_HEADER = {
     'accept': 'application/json'
 }
 
-def get_qloo_rec_endpoint(entity, tags, page, state= None, country_code=None):
+def is_country_level(category):
+    """
+    Check if the category is country level.
+    
+    Args:
+        category (str): The category to check.
+    
+    Returns:
+        bool: True if the category is country level, False otherwise.
+    """
+    return category.lower() in ['movies', 'books']
+
+def get_qloo_rec_endpoint(entity, tags, page, state= None, country_code=None, longitude=None, latitude=None, should_be_recent=False):
+    # Year based limit
+    year_limit = ""
+    if entity in ["urn:entity:movie", "urn:entity:tv_show"]:
+        year_limit = "&filter.release_year.min=2023"  if should_be_recent else "&filter.release_year.min=2000"
+    elif entity == "urn:entity:book":
+        year_limit = "&filter.publication_year.min=2023" if should_be_recent else "&filter.publication_year.min=2000"
+
     location_str = ''
     if state is not None and country_code is not None:
         location_str = f"&filter.geocode.country_code={country_code}&filter.geocode.filter.geocode.admin1_region={state}"
-    return f"{QLOO_API_URL}v2/insights?filter.type={entity}&filter.tags={tags}{location_str}&page={page}"
+    elif longitude is not None and latitude is not None:
+        location_str = f"&signal.location=POINT%28{longitude}%20{latitude}%29"
+
+    return f"{QLOO_API_URL}v2/insights?filter.type={entity}&filter.tags={tags}{location_str}&page={page}{year_limit}"
 
 def get_qloo_search_endpoint(entity, query, location=None ,page=1):
     location_str = ''
@@ -29,8 +50,10 @@ def get_qloo_search_endpoint(entity, query, location=None ,page=1):
         location_str = f"&filter.location={location.get('latitude')},{location.get('longitude')}"
     return f"{QLOO_API_URL}/search?query={query}&types={entity}{location_str}&page={page}&sort_by=popularity"
 
-def get_qloo_tags_endpoint(entity):
-    return f"{QLOO_API_URL}v2/tags?feature.typo_tolerance=false&filter.parents.types={entity}"
+def get_qloo_tags_endpoint(entity, query= None):
+    if query is not None and query != "":
+        query = f"&filter.query={query}"
+    return f"{QLOO_API_URL}v2/tags?feature.typo_tolerance=true&filter.parents.types={entity}{query}"
 
 def make_qloo_request(endpoint):
     response = requests.get(endpoint, headers=QLOO_HEADER)
@@ -38,21 +61,29 @@ def make_qloo_request(endpoint):
         raise Exception(f"Error fetching data from Qloo API: {response.status_code} - {response.text}")
     return response.json()
 
-def get_qloo_tags_to_select_from(entity_name):
+def get_qloo_tag_to_use_for_non_specific(entity_name, query = None, backups= None):
     qloo_enity = ENTITIES.get(entity_name)
     if not qloo_enity:
         raise ValueError(f"Invalid entity name: {entity_name}")
-    endpoint = get_qloo_tags_endpoint(qloo_enity)
+    look_for_genre = entity_name in ['movies', 'tv_shows', 'books']
+    endpoint = get_qloo_tags_endpoint(qloo_enity, query)
     data = make_qloo_request(endpoint)
-    tags_object = {
-    i + 1: {
-        "id": r.get("id"),
-        "name": r.get("name"),
-        "description": r.get("properties", {}).get("description"),
-    }
-    for i, r in enumerate(data.get("results", {}).get("tags", []))
-    }
-    return tags_object
+    for tag in data.get("results", {}).get("tags", []):
+        tag_name = tag.get("name", "").strip().lower()
+        tag_id = tag.get("id") or tag.get("tag_id")
+        if not tag_name or not tag_id:
+            continue
+
+        if look_for_genre:
+            tag_type_parts = tag.get('type', '').lower().split(':')
+            # Check if 'genre' is an exact part of the type, not a substring
+            if 'genre' in tag_type_parts:
+                return tag_id
+        else:
+            # Return the first valid tag
+            return tag_id
+    return None
+
 
 def clean_html_text(html_text):
     # Define tags whose entire content should be removed
@@ -388,12 +419,27 @@ def get_qloo_search_recommendations(entity_name, recommendation_fetch_data, page
     print(f"Found {len(recommendation_entities)} recommendations for {entity_name} on page {page}")
     return recommendation_entities
 
-def get_qloo_recommendations_by_tag_id(entity_name, tag_id, page, location=None):
+def get_qloo_recommendations_by_tag_id(entity_name, tag_id, page, location=None, should_be_recent=False):
     qloo_entity = ENTITIES.get(entity_name)
     if not qloo_entity:
         raise ValueError(f"Invalid entity name: {entity_name}")
     
-    endpoint = get_qloo_rec_endpoint(qloo_entity, tag_id, page, location.get('state') if location else None, location.get('country_code') if location else None)
+    # Remove the location data not needed based on entity type
+    if entity_name in ['places', 'destinations']:
+        if location is not None:
+            del location['latitude']
+            del location['longitude']
+    elif entity_name in ['movies', 'tv_shows', 'books']:
+        if location is not None:
+            del location['state']
+            del location['country_code']
+    
+    endpoint = get_qloo_rec_endpoint(qloo_entity, tag_id, page, 
+                                     location.get('state') if location else None, 
+                                     location.get('country_code') if location else None, 
+                                     longitude=location.get('longitude') if location else None, 
+                                     latitude=location.get('latitude') if location else None,
+                                     should_be_recent=should_be_recent)
     print(f"Fetching recommendations from Qloo API for {entity_name} with tag ID {tag_id} with endpoint {endpoint}")
     
     data = make_qloo_request(endpoint)
@@ -415,4 +461,5 @@ def get_qloo_recommendations_by_tag_id(entity_name, tag_id, page, location=None)
             for entity in data.get("results", {}).get("entities", [])
         ]
     
+    print(f"Found {len(recommendation_entities)} recommendations for {entity_name} with tag ID {tag_id} on page {page}")
     return recommendation_entities

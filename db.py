@@ -63,7 +63,7 @@ def get_recommendations_using_details(details, page=None):
         else:
             # Anything other than error means we have recommendations but we need tio check if its up to the page limit and if not then we still have to return empty recommendations
             if len(recommendations) < RECOMMENDATIONS_PER_PAGE:
-                print("Not enough for the page limit, returning empty recommendations.")
+                #print("Not enough for the page limit, returning empty recommendations.")
                 return 
     
     # If the recommendations are found but not exactly amount for teh page then reurn None also
