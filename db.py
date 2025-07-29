@@ -124,7 +124,13 @@ def set_session_status_field(session_id, recommendation_category, user_message, 
         None
     """
     query = {'session_id': session_id}
-    key = selected_tag_id if selected_tag_id else clean_text(user_message)
+    keys_l = []
+    if user_message is not None:
+        keys_l.append(clean_text(user_message))
+    if selected_tag_id is not None:
+        keys_l.append(selected_tag_id)
+    
+    key = ".".join(keys_l) if keys_l else None
     field_path = f"{recommendation_category}.{key}.{field_key}"
 
     update = {
@@ -150,7 +156,13 @@ def get_session_status_field(session_id, recommendation_category, user_message, 
         Any or None: The field value if found, otherwise None.
     """
     query = {'session_id': session_id}
-    key = selected_tag_id if selected_tag_id else clean_text(user_message)
+    keys_l = []
+    if user_message is not None:
+        keys_l.append(clean_text(user_message))
+    if selected_tag_id is not None:
+        keys_l.append(selected_tag_id)
+    
+    key = ".".join(keys_l) if keys_l else None
     field_path = f"{recommendation_category}.{key}.{field_key}"
 
     projection = {field_path: 1, '_id': 0}

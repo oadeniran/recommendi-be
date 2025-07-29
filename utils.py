@@ -1,11 +1,15 @@
 from geopy.geocoders import GoogleV3
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import requests
-from config import GOOGLE_API_KEY, COUNTRY_NAMES
+from config import GOOGLE_API_KEY, COUNTRY_NAMES, SHAPEFILE_PATH
 import json
 import re
 import unicodedata
 from countryinfo import CountryInfo
+from geopy.distance import geodesic
+import geopandas as gpd
+import pycountry
+import os
 
 
 def dict_to_string(d, explanations=None, indent=0, normalize_text=False):
@@ -124,24 +128,67 @@ def geocode_address(address: str) -> dict:
         print(f"Geocoding error: {str(e)}")
         return {"latitude": 47.751076, "longitude": -120.740135}
     
-def get_all_location_details(address, country_level=False):
-    """ This function receives a string of text which is an address and returns a dictionary with the following keys:
-    - county: The county of the address
-    - country: The country of the address
-    - country_code: The country code of the address
-    - state: The state of the address
-    - state_abbr: The state abbreviation of the address
-    - zip_code: The zip code of the address
-    It also returns the latitude and longitude of the address.
+def get_max_radius_from_point(lat, lon, country_name):
     """
+    Given a lat/lon and country name, compute the farthest distance (in km)
+    from that point to any coordinate on the country's border.
+    """
+    try:
+        if not os.path.exists(SHAPEFILE_PATH):
+            raise FileNotFoundError(f"Shapefile not found at {SHAPEFILE_PATH}")
+
+        world = gpd.read_file(SHAPEFILE_PATH)
+        country = world[world['NAME'].str.lower() == country_name.lower()]
+        if country.empty:
+            # Try using ISO code
+            country_code = pycountry.countries.get(name=country_name)
+            if country_code:
+                country = world[world['ISO_A3'] == country_code.alpha_3]
+        if country.empty:
+            return None
+
+        geometry = country.iloc[0].geometry
+        origin = (lat, lon)
+
+        # Handle MultiPolygon and Polygon
+        if geometry.type == 'MultiPolygon':
+            max_distance = max(
+                geodesic(origin, (coord[1], coord[0])).km
+                for polygon in geometry.geoms
+                for coord in polygon.exterior.coords
+            )
+        else:
+            max_distance = max(
+                geodesic(origin, (coord[1], coord[0])).km
+                for coord in geometry.exterior.coords
+            )
+
+        return round(max_distance, 2)
+
+    except Exception as e:
+        print("Error:", e)
+        return None
+
+
+def get_all_location_details(address, country_level=False):
+    """Returns full location details including geocode and max radius for country."""
     country, country_code, county, state, state_abbr, zip_code = get_address_details(address)
+
     if country_level:
         country_address = country or extract_country_from_text(address)
         capital = get_capital_for_country(country_address)
         address_to_geocode = f"{capital}, {country_address}" 
     else:
         address_to_geocode = address
+
     geocoded_address = geocode_address(address_to_geocode)
+    lat = geocoded_address.get('latitude')
+    lon = geocoded_address.get('longitude')
+
+    max_radius = None
+    if lat and lon and country:
+        max_radius = get_max_radius_from_point(lat, lon, country)
+
     return {
         "county": county,
         "country": country,
@@ -149,8 +196,9 @@ def get_all_location_details(address, country_level=False):
         "state": state,
         "state_abbr": state_abbr,
         "zip_code": zip_code,
-        "latitude": geocoded_address.get('latitude'),
-        'longitude': geocoded_address.get('longitude')
+        "latitude": lat,
+        'longitude': lon,
+        "max_radius": max_radius  # in kilometers
     }
 
 

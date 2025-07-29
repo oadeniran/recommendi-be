@@ -16,3 +16,4 @@ beautifulsoup4
 geopy==2.4.1
 pycountry
 countryinfo
+geopandas

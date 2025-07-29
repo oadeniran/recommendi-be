@@ -16,3 +16,4 @@ OAI_KEY = os.getenv("OAI_KEY", "")
 RECOMMENDATIONS_PER_PAGE = 2
 # Create a set of all country names (lowercase for matching)
 COUNTRY_NAMES = {country.name.lower() for country in pycountry.countries}
+SHAPEFILE_PATH = os.getenv("SHAPEFILE_PATH", "countries_data")  # Update with your shapefile path

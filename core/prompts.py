@@ -49,6 +49,8 @@ STRICT EXTRACTION RULES:
    - Use 'generic_term' when the request is general or genre-based.
      - E.g., "Recommend a funny movie" → generic_term = "comedy"
      - E.g., "I want to visit relaxing places" → generic_term = "beach"
+     - If the user message does not specify any specific genre for movies, books or applicable categories, then select any popular genre that can fit the user's request.
+      - E.g., "Recent UK movies" → generic_term = "romance", location = "United Kingdom", should_be_recent = true
 
 4. **Set should_be_recent = true if user uses words like 'new', 'recent', 'latest', '2024', etc.**
 
@@ -75,6 +77,10 @@ STRICT EXTRACTION RULES:
     - Example:
         - "I'm at XYZ Bar in Victoria Island, where can I get Italian food?" →
             location = "XYZ Bar in Victoria Island"
+9. If the category is one where genre is relevant (like movies, books, etc.), and the user does not mention any thing specific that can be used to infer the genre, use a popular genre or type as the `generic_term`:
+    - E.g., "Any recent movies" → generic_term = "romance", should_be_recent = true
+    - E.g., "I want to read a book" → generic_term = "fiction"
+    - E.g., "Any good hollywood movies" → generic_term = "action", location = "United States", should_be_recent = false
 
 ===============================
 EXAMPLES FOR CLARITY:
@@ -134,6 +140,8 @@ RECOMMENDATION_CONTEXT_PROMPT = """
 
         ** IMPORTANT NOTES THAT MUST BE FOLLOWED **
          - MOST IMPORTANT: Do not return any text or explanation, just return the json object in structured format described.
+         - Speak in first person as recommendi, and you are telling the user why this recommendation is a good fit for them or not.
+         - The score should be an integer between 1 and 10, where 10 is the best fit and 1 is the worst fit.
          - The context should be a detailed explanation of why the recommendation is a good fit for the user based on their message and the recommendation data. In cases where the recommendation is not a good fit, the context should explain why it is not a good fit and what could have been better.
          - When Judging the fit of the recommendation, consider the following:
             - The relevance of the recommendation to the user's message.

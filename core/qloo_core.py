@@ -37,19 +37,30 @@ def is_country_level(category):
     """
     return category.lower() in ['movies', 'books']
 
-def get_qloo_rec_endpoint(entity, tags, page, state= None, country_code=None, longitude=None, latitude=None, should_be_recent=False):
+def get_qloo_rec_endpoint(entity, tags, page, state= None, country_code=None, longitude=None, latitude=None, should_be_recent=False, radius=None):
     # Year based limit
     year_limit = ""
     if entity in ["urn:entity:movie", "urn:entity:tv_show"]:
-        year_limit = "&filter.release_year.min=2023"  if should_be_recent else "&filter.release_year.min=2000"
+        year_limit = "&filter.release_year.min=2020"  if should_be_recent else "&filter.release_year.min=2000"
     elif entity == "urn:entity:book":
-        year_limit = "&filter.publication_year.min=2023" if should_be_recent else "&filter.publication_year.min=2000"
+        year_limit = "&filter.publication_year.min=2020" if should_be_recent else "&filter.publication_year.min=2000"
 
     location_str = ''
     if state is not None and country_code is not None:
         location_str = f"&filter.geocode.country_code={country_code}&filter.geocode.filter.geocode.admin1_region={state}"
     elif longitude is not None and latitude is not None:
-        location_str = f"&signal.location=POINT%28{longitude}%20{latitude}%29"
+        radius_str = ""
+        if radius is not None:
+            try:
+                radius = int(radius)
+                radius_str = str(radius)
+            except ValueError:
+                print(f"Invalid radius value: {radius}. Using default radius of 900 km.")
+                radius_str = "900"
+        else:
+            radius_str = "900"  # Default radius of 900 km
+            
+        location_str = f"&signal.location=POINT%28{longitude}%20{latitude}%29&signal.location.radius={radius_str}"
 
     return f"{QLOO_API_URL}v2/insights?filter.type={entity}&filter.tags={tags}{location_str}&page={page}{year_limit}"
 
@@ -448,7 +459,8 @@ def get_qloo_recommendations_by_tag_id(entity_name, tag_id, page, location=None,
                                      location.get('country_code') if location else None, 
                                      longitude=location.get('longitude') if location else None, 
                                      latitude=location.get('latitude') if location else None,
-                                     should_be_recent=should_be_recent)
+                                     should_be_recent=should_be_recent,
+                                     radius = location.get('max_radius') if location else None)
     print(f"Fetching recommendations from Qloo API for {entity_name} with tag ID {tag_id} with endpoint {endpoint}")
     
     data = make_qloo_request(endpoint)

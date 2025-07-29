@@ -41,6 +41,7 @@ async def generate_alonis_qloo_powered_recommendations(session_id, recommendatio
     message_converted_to_tag = False
     last_location_details = None
     should_be_recent = False
+    fresh_recommendation_details = False
     try:
         if is_tags_only == False:
 
@@ -61,6 +62,7 @@ async def generate_alonis_qloo_powered_recommendations(session_id, recommendatio
                     recommendation_category, 
                     all_possible_recommendation_categories=qloo_core.get_all_possible_recommendation_categories()
                 )
+                fresh_recommendation_details = True
             else:
                 recommendation_fetch_data_for_user_message = recommendation_fetch_data
             print(f"Recommendation fetch data for user message: {recommendation_fetch_data_for_user_message}")
@@ -68,7 +70,7 @@ async def generate_alonis_qloo_powered_recommendations(session_id, recommendatio
             if not recommendation_fetch_data_for_user_message or recommendation_fetch_data_for_user_message.get('is_valid', False) == False:
                 raise Exception("show_user: Your message does not seem to be a valid one for generating recommendations. Please try again with a valid message.")
             
-            if 'location' in recommendation_fetch_data_for_user_message and recommendation_fetch_data_for_user_message['location'] != '':
+            if 'location' in recommendation_fetch_data_for_user_message and recommendation_fetch_data_for_user_message['location'] != '' and fresh_recommendation_details == True:
                 # If the location is provided, get the location details
                 location_detils = await asyncio.to_thread(get_all_location_details, recommendation_fetch_data_for_user_message['location'], country_level=qloo_core.is_country_level(recommendation_category))
                 recommendation_fetch_data_for_user_message['location_details'] = location_detils
@@ -123,12 +125,27 @@ async def generate_alonis_qloo_powered_recommendations(session_id, recommendatio
             else:
                 message_converted_to_tag = True
                 # If the message is not specific, we can use the generic term to get a tag to use for recommendations
-                tag_to_use = await asyncio.to_thread(qloo_core.get_qloo_tag_to_use_for_non_specific,
-                    recommendation_category, 
-                    recommendation_fetch_data_for_user_message.get('generic_term', None),
-                    backups=recommendation_fetch_data_for_user_message.get('backup_keywords', None)
+
+                # First check if we have a tag to use for the recommendation
+                possible_tag_switched_id = await asyncio.to_thread(get_session_status_field,
+                    session_id,
+                    recommendation_category,
+                    user_message,
+                    None,
+                    field_key='tag_switched_id'
                 )
-                print(f"Tag to use for non-specific message: {tag_to_use}")
+                if possible_tag_switched_id is None:
+                    tag_to_use = await asyncio.to_thread(qloo_core.get_qloo_tag_to_use_for_non_specific,
+                        recommendation_category, 
+                        recommendation_fetch_data_for_user_message.get('generic_term', None),
+                        backups=recommendation_fetch_data_for_user_message.get('backup_keywords', None)
+                    )
+                    print(f"Tag to use for non-specific message: {tag_to_use}")
+                else:
+                    tag_to_use = possible_tag_switched_id
+                    print(f"Using previously switched tag ID: {tag_to_use} for session {session_id} in category {recommendation_category}")
+
+                
                 if tag_to_use:
                     selected_tag_id = tag_to_use
                 last_location_details = recommendation_fetch_data_for_user_message.get('location_details', {})
@@ -200,18 +217,18 @@ async def generate_alonis_qloo_powered_recommendations(session_id, recommendatio
             session_id,
             recommendation_category,
             user_message,
-            None if message_converted_to_tag else selected_tag_id,
+            selected_tag_id,
             field_key='is_processing',
             field_value=False
         ))
-
         if message_converted_to_tag:
-        # We need to also stop the processing of the session for this tag
+            # If the message was converted to a tag, we need to set upper level processing status to False
+            # This is to ensure that the session is not marked as processing for the user message
             asyncio.create_task(asyncio.to_thread(set_session_status_field,
                 session_id,
                 recommendation_category,
+                user_message,
                 None,
-                selected_tag_id,
                 field_key='is_processing',
                 field_value=False
             ))
@@ -295,13 +312,14 @@ async def enrich_and_save_recommendations(session_id, rec_category,recommendatio
     set_session_status_field(
         session_id,
         rec_category,
-        user_query,
+        original_query,
         tag_id,
         field_key='is_processing',
         field_value=False
     )
     if message_converted_to_tag:
-        # We need to also stop the processing of the session for this user message
+        # If the message was converted to a tag, we need to set upper level processing status to False
+        # This is to ensure that the session is not marked as processing for the user message
         set_session_status_field(
             session_id,
             rec_category,
