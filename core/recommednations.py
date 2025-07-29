@@ -350,30 +350,30 @@ async def get_recommendations_by_details(details, page=1):
         details.get('session_id'),
         details.get('recommendation_category'),
         details.get('user_message'),
-        details.get('selected_tag_id'),
+        details.get('tag_id'),
         field_key='is_processing'
     )
     print(f"Processing status for session {details.get('session_id')}: {processing_status}")
-
-    error_message = await asyncio.to_thread(get_session_status_field,
-        details.get('session_id'),
-        details.get('recommendation_category'),
-        details.get('user_message'),
-        details.get('selected_tag_id'),
-        field_key='error_message'
-    )
 
     possible_tag_switched_id = await asyncio.to_thread(get_session_status_field,
         details.get('session_id'),
         details.get('recommendation_category'),
         details.get('user_message'),
-        details.get('selected_tag_id'),
+        details.get('tag_id'),
         field_key='tag_switched_id'
     )
 
     if possible_tag_switched_id is not None:
         print(f"Possible tag switched ID for session {details.get('session_id')}: {possible_tag_switched_id}")
         details['tag_id'] = possible_tag_switched_id
+    
+    error_message = await asyncio.to_thread(get_session_status_field,
+        details.get('session_id'),
+        details.get('recommendation_category'),
+        details.get('user_message'),
+        details.get('tag_id'),
+        field_key='error_message'
+    )
 
     recommendations = await asyncio.to_thread(get_recommendations_using_details,details=details, page=page)
     # print(f"Recommendations fetched for session {details.get('session_id')}: {recommendations}")

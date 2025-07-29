@@ -59,7 +59,7 @@ def get_qloo_rec_endpoint(entity, tags, page, state= None, country_code=None, lo
                 radius_str = "900"
         else:
             radius_str = "900"  # Default radius of 900 km
-            
+
         location_str = f"&signal.location=POINT%28{longitude}%20{latitude}%29&signal.location.radius={radius_str}"
 
     return f"{QLOO_API_URL}v2/insights?filter.type={entity}&filter.tags={tags}{location_str}&page={page}{year_limit}"
@@ -68,7 +68,8 @@ def get_qloo_search_endpoint(entity, query, location=None ,page=1):
     location_str = ''
     if location is not None:
         location_str = f"&filter.location={location.get('latitude')},{location.get('longitude')}"
-    return f"{QLOO_API_URL}/search?query={query}&types={entity}{location_str}&page={page}&sort_by=popularity"
+    sort_type = "match" if "book" in entity else "popularity"
+    return f"{QLOO_API_URL}/search?query={query}&types={entity}{location_str}&page={page}&sort_by={sort_type}"
 
 def get_qloo_tags_endpoint(entity, query= None):
     if query is not None and query != "":
@@ -81,28 +82,86 @@ def make_qloo_request(endpoint):
         raise Exception(f"Error fetching data from Qloo API: {response.status_code} - {response.text}")
     return response.json()
 
+def loosely_matches(query: str, target: str) -> bool:
+    # Normalize: lowercase, remove punctuation, split into words
+    def tokenize(s):
+        return set(re.findall(r'\w+', s.lower()))
+
+    query_tokens = tokenize(query)
+    target_tokens = tokenize(target)
+
+    # Check if query tokens are a subset of target tokens or vice versa
+    return query_tokens.issubset(target_tokens) or target_tokens.issubset(query_tokens)
+
 def get_qloo_tag_to_use_for_non_specific(entity_name, query = None, backups= None):
     qloo_enity = ENTITIES.get(entity_name)
     if not qloo_enity:
         raise ValueError(f"Invalid entity name: {entity_name}")
     look_for_genre = entity_name in ['movies', 'tv_shows', 'books']
     endpoint = get_qloo_tags_endpoint(qloo_enity, query)
+    print(f"Fetching tags from Qloo API for {entity_name} with query '{query}' with endpoint {endpoint}")
     data = make_qloo_request(endpoint)
-    for tag in data.get("results", {}).get("tags", []):
+    # Candidates for all match types, ordered by priority
+    exact_genre_match = None
+    substring_genre_match = None
+    exact_subgenre_match = None
+    substring_subgenre_match = None
+    first_genre_fallback = None
+    # Clean the query term once
+    query = query.strip().lower()
+
+    for i, tag in enumerate(data.get("results", {}).get("tags", [])):
+        if i >= 10:
+            break
+
         tag_name = tag.get("name", "").strip().lower()
         tag_id = tag.get("id") or tag.get("tag_id")
+        tag_type_parts = tag.get('type', '').lower().split(':')
+
         if not tag_name or not tag_id:
             continue
 
-        if look_for_genre:
-            tag_type_parts = tag.get('type', '').lower().split(':')
-            # Check if 'genre' is an exact part of the type, not a substring
-            if 'genre' in tag_type_parts:
-                return tag_id
-        else:
-            # Return the first valid tag
+        is_genre = 'genre' in tag_type_parts
+        is_subgenre = 'subgenre' in tag_type_parts
+
+        # --- Prioritized Logic ---
+        if not look_for_genre:
+            # If not looking for genre, return the first tag:
             return tag_id
-    return None
+
+        if is_genre:
+            # Check for exact match (highest priority)
+            if tag_name == query and exact_genre_match is None:
+                exact_genre_match = tag_id
+                break  # Stop searching after finding the first genre match
+
+            # Check for substring match
+            elif loosely_matches(tag_name, query) and substring_genre_match is None:
+                substring_genre_match = tag_id
+            
+            # Save the first generic genre as a fallback
+            elif first_genre_fallback is None:
+                first_genre_fallback = tag_id
+
+        # Commented out logic for subgenres, as it seems qloo does not support subgenres well
+        # elif is_subgenre:
+        #     # Check for match
+        #     if tag_name==query and exact_subgenre_match is None:
+        #         exact_subgenre_match = tag_id
+
+        #     # Check for substring match
+        #     elif loosely_matches(tag_name, query) and substring_subgenre_match is None:
+        #         substring_subgenre_match = tag_id
+
+    # --- Final Decision ---
+    # Return the best candidate found, in order of priority
+    return (
+        exact_genre_match or
+        exact_subgenre_match or
+        substring_subgenre_match or
+        substring_genre_match or
+        first_genre_fallback
+    )
 
 
 def clean_html_text(html_text):

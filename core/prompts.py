@@ -7,8 +7,10 @@ The selected recommendation category is: {selected_recommendation_category}
 
 All possible recommendation categories are: {all_possible_recommendation_categories}
 
-Keywors should be infeered with context of the current selected category and When inferring a keyword, avoid vague or descriptive-only phrases like "tasty Chinese". Instead, expand to a more specific and actionable concept.
+Keywords should be infeered with context of the current selected category and When inferring a keyword, avoid vague or descriptive-only phrases like "tasty Chinese". Instead, expand to a more specific and actionable concept.
         For example:“Where can I eat something sweet in New York?” → keyword: **dessert places** or **dessert shops**, not just “something sweet”.
+    Still on context, you always understand the core element of user's message that should be used for keywords. "
+        For example. I like reading law fiction books like those written by John Grisham, can you recommend more like these? → keyword: **law fiction books** or **legal fiction thrillers**, not just “law fiction” or “John Grisham” because the user is looking for more books in that specific genre, not just any book by John Grisham.
       Always try to normalize the user's description into a concrete **venue, service, or item type** that maps well to the selected category and can be used effectively 
 
 Your output should be a JSON object with the following keys:
@@ -43,12 +45,14 @@ STRICT EXTRACTION RULES:
         - If the category is **Movies**, and the user says “I'd like to see a movie in Lagos,” the appropriate keyword should be **cinema** instead of **movie**, because the user is looking for a place to **watch** a movie, not just information about a movie.
         - If the category is **Food**, and the user says “Where can I eat suya in Abuja?” return a keyword like  **suya restaurant**, not just “suya”.
         Avoid generic keywords that merely echo the user's input. Instead, infer what **entity or service** the user is actually looking for.
-   - Use 'keyword' when is_specific is true (i.e., the user references a specific movie, book, location, or item).
+   - Use 'keyword' when is_specific is true (i.e., the user references a specific movie, book, location, or item or concept).
      - E.g., "Movies like The Dark Knight Rises" → keyword = "superhero thriller", is_specific = true
-     - E.g., "I need a restaurant in Lagos that serves good jollof rice" → keyword = "good jollof rice", location = "Lagos, Nigeria"
+     - E.g., "I need a restaurant in Lagos that serves good jollof rice" → keyword = "good jollof rice", location = "Lagos, Nigeria", is_specific = true
+     - E.g., "I want books that talk about the Big Bang Theory" → keyword = "Big Bang Theory", is_specific = true
    - Use 'generic_term' when the request is general or genre-based.
      - E.g., "Recommend a funny movie" → generic_term = "comedy"
      - E.g., "I want to visit relaxing places" → generic_term = "beach"
+     - E.g., "I need a book that is action-packed" → generic_term = "action"
      - If the user message does not specify any specific genre for movies, books or applicable categories, then select any popular genre that can fit the user's request.
       - E.g., "Recent UK movies" → generic_term = "romance", location = "United Kingdom", should_be_recent = true
 
@@ -81,6 +85,7 @@ STRICT EXTRACTION RULES:
     - E.g., "Any recent movies" → generic_term = "romance", should_be_recent = true
     - E.g., "I want to read a book" → generic_term = "fiction"
     - E.g., "Any good hollywood movies" → generic_term = "action", location = "United States", should_be_recent = false
+-   - E.g., "I want to read a motivational book" → generic_term = "self-help"
 
 ===============================
 EXAMPLES FOR CLARITY:
@@ -112,6 +117,9 @@ EXAMPLES FOR CLARITY:
 9. User: I want somewhere romantic to eat in Paris
     → is_valid: true, is_specific: false, keyword: "", generic_term: "romantic restaurant", location: "Paris, France", should_be_recent: false, backup_keywords: "romantic,restaurant,eat"
     The term "romantic" on its own isn't a good search term. The actual target is a restaurant with a romantic ambiance — a well-defined search entity.
+10. User: "I like horror stories like the Shining by Stephen King, give me similar books"
+    → is_valid: true, is_specific: true, keyword: "fictional horror stories", generic_term: "", location: "", should_be_recent: false, backup_keywords: "horror,thriller,stephen king"
+    for books, if the inference is the genre, the keyword should generally capture if its non-fictional or fictional, and the genre of the book, so that it can be used to search for similar books.
 
 ===============================
 MOST IMPORTANT:
