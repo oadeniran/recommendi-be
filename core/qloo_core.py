@@ -104,8 +104,8 @@ def get_qloo_tag_to_use_for_non_specific(entity_name, query = None, backups= Non
     # Candidates for all match types, ordered by priority
     exact_genre_match = None
     substring_genre_match = None
-    exact_subgenre_match = None
-    substring_subgenre_match = None
+    exact_keyword_match = None
+    substring_keyword_match = None
     first_genre_fallback = None
     # Clean the query term once
     query = query.strip().lower()
@@ -122,7 +122,7 @@ def get_qloo_tag_to_use_for_non_specific(entity_name, query = None, backups= Non
             continue
 
         is_genre = 'genre' in tag_type_parts
-        is_subgenre = 'subgenre' in tag_type_parts
+        is_keyword = 'keyword' in tag_type_parts
 
         # --- Prioritized Logic ---
         if not look_for_genre:
@@ -143,24 +143,21 @@ def get_qloo_tag_to_use_for_non_specific(entity_name, query = None, backups= Non
             elif first_genre_fallback is None:
                 first_genre_fallback = tag_id
 
-        # Commented out logic for subgenres, as it seems qloo does not support subgenres well
-        # elif is_subgenre:
-        #     # Check for match
-        #     if tag_name==query and exact_subgenre_match is None:
-        #         exact_subgenre_match = tag_id
+        
+        elif is_keyword:
+            # Check for match
+            if tag_name==query and exact_keyword_match is None:
+                exact_keyword_match = tag_id.replace("qloo", "media")
+                break  # Stop searching after finding the first keyword match
 
-        #     # Check for substring match
-        #     elif loosely_matches(tag_name, query) and substring_subgenre_match is None:
-        #         substring_subgenre_match = tag_id
+            # Check for substring match
+            elif loosely_matches(tag_name, query) and substring_keyword_match is None:
+                substring_keyword_match = tag_id.replace("qloo", "media") 
 
     # --- Final Decision ---
     # Return the best candidate found, in order of priority
     return (
-        exact_genre_match or
-        exact_subgenre_match or
-        substring_subgenre_match or
-        substring_genre_match or
-        first_genre_fallback
+        exact_keyword_match or substring_keyword_match or exact_genre_match or substring_genre_match or first_genre_fallback
     )
 
 
@@ -204,7 +201,7 @@ def transform_movie_entity(entity):
             where_to_watch_list.append(tag_name)
 
         # Rule 2: Add all genres to the final 'tags' list
-        elif 'genre' in tag_type:
+        elif 'genre' in tag_type and 'subgenre' not in tag_type:
             filtered_tags.append({"name" : tag_name, "id": tag_id})
             if not first_genre:
                 first_genre = tag_name

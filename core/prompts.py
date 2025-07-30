@@ -42,17 +42,18 @@ STRICT EXTRACTION RULES:
 3. **keyword vs generic_term usage**
      When determining the best keyword, always consider the user's selected category and the context of their message and keep them as short as possible (the best one or two word that convesy the essence).
         For example:
-        - If the category is **Movies**, and the user says “I'd like to see a movie in Lagos,” the appropriate keyword should be **cinema** instead of **movie**, because the user is looking for a place to **watch** a movie, not just information about a movie.
-        - If the category is **Food**, and the user says “Where can I eat suya in Abuja?” return a keyword like  **suya restaurant**, not just “suya”.
+        - If the category is **Places**, and the user says “I'd like to see a movie in Lagos,” the appropriate keyword should be **cinema** instead of **movie**, because the user is looking for a place to **watch** a movie, not just information about a movie.
+        - If the category is **Places**, and the user says “Where can I eat suya in Abuja?” return a keyword like  **suya restaurant**, not just “suya”.
         Avoid generic keywords that merely echo the user's input. Instead, infer what **entity or service** the user is actually looking for.
    - Use 'keyword' when is_specific is true (i.e., the user references a specific movie, book, location, or item or concept).
-     - E.g., "Movies like The Dark Knight Rises" → keyword = "superhero thriller", is_specific = true
-     - E.g., "I need a restaurant in Lagos that serves good jollof rice" → keyword = "good jollof rice", location = "Lagos, Nigeria", is_specific = true
-     - E.g., "I want books that talk about the Big Bang Theory" → keyword = "Big Bang Theory", is_specific = true
+     - E.g., "Movies like The Dark Knight Rises" → keyword = "superhero thriller", is_specific = true (User specifies an actual movie entity)
+     - E.g., "I need a restaurant in Lagos that serves good jollof rice" → keyword = "good jollof rice", location = "Lagos, Nigeria", is_specific = true (User specifies a specific dish and location)
+     - E.g., "I want books that talk about the Big Bang Theory" → keyword = "Big Bang Theory", is_specific = true (User specifies a specific book or concept for the book)
    - Use 'generic_term' when the request is general or genre-based.
-     - E.g., "Recommend a funny movie" → generic_term = "comedy"
-     - E.g., "I want to visit relaxing places" → generic_term = "beach"
-     - E.g., "I need a book that is action-packed" → generic_term = "action"
+     - E.g., "Recommend a funny movie" → generic_term = "comedy", is_specific = false (User does not specify a specific movie entity, jsut a genre)
+     - E.g., "I need a book that is action-packed" → generic_term = "action", is_specific = false (User does not specify a specific book entity, jsut a genre)
+     - E.g., "I want superhero movies" → generic_term = "superhero action", is_specific = false (User does not specify a specific movie entity, jsut a genre)
+       E.g., "Give me detective movies" → generic_term = "detective thriller", is_specific = false (User does not specify a specific movie entity, jsut an important satement (detective) that can be used to infer the genre) 
      - If the user message does not specify any specific genre for movies, books or applicable categories, then select any popular genre that can fit the user's request.
       - E.g., "Recent UK movies" → generic_term = "romance", location = "United Kingdom", should_be_recent = true
 
@@ -86,6 +87,10 @@ STRICT EXTRACTION RULES:
     - E.g., "I want to read a book" → generic_term = "fiction"
     - E.g., "Any good hollywood movies" → generic_term = "action", location = "United States", should_be_recent = false
 -   - E.g., "I want to read a motivational book" → generic_term = "self-help"
+10. If the category is for movies, and all user provided is just an important statement that can be used to infer the genre, then use that important statement to infer the genre and set is_specific = false:
+    - E.g., "I want some superhero movies" → generic_term = "superhero action", is_specific = false Here the action genre is inferred from the superhero context to ensure the keyword is actionable and provides a clear search target.
+    - E.g., "I want detective movies" → generic_term = "detective thriller", is_specific = false Here the thriller genre is inferred from the detective context to ensure the keyword is actionable and provides a clear search target.
+
 
 ===============================
 EXAMPLES FOR CLARITY:
