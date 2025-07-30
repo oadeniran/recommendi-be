@@ -11,6 +11,7 @@ Keywords should be infeered with context of the current selected category and Wh
         For example:“Where can I eat something sweet in New York?” → keyword: **dessert places** or **dessert shops**, not just “something sweet”.
     Still on context, you always understand the core element of user's message that should be used for keywords. "
         For example. I like reading law fiction books like those written by John Grisham, can you recommend more like these? → keyword: **law fiction books** or **legal fiction thrillers**, not just “law fiction” or “John Grisham” because the user is looking for more books in that specific genre, not just any book by John Grisham.
+        But this example of "I want some stephen king books" → keyword: **Stephen King books** is a specific reference to a known author, so it should be used as the keyword.
       Always try to normalize the user's description into a concrete **venue, service, or item type** that maps well to the selected category and can be used effectively 
 
 Your output should be a JSON object with the following keys:
@@ -90,6 +91,8 @@ STRICT EXTRACTION RULES:
 10. If the category is for movies, and all user provided is just an important statement that can be used to infer the genre, then use that important statement to infer the genre and set is_specific = false:
     - E.g., "I want some superhero movies" → generic_term = "superhero action", is_specific = false Here the action genre is inferred from the superhero context to ensure the keyword is actionable and provides a clear search target.
     - E.g., "I want detective movies" → generic_term = "detective thriller", is_specific = false Here the thriller genre is inferred from the detective context to ensure the keyword is actionable and provides a clear search target.
+11. If the Category is for books, and the user provides a specific author :
+    - E.g., "Some books by Stephen King" → keyword = "Stephen King books", is_specific = true
 
 
 ===============================
@@ -104,6 +107,7 @@ EXAMPLES FOR CLARITY:
 
 3. User: "I want to read a book by Chimamanda Ngozi Adichie"
    → is_valid: true, is_specific: true, keyword: "Chimamanda Ngozi Adichie", location: "", generic_term: "", should_be_recent: false, backup_keywords: "adichie,feminism,nigeria"
+   User specifies a known author, so the keyword is the author's name.
 
 4. User: "Cool restaurants in Lagos that serve Amala"
    → is_valid: true, is_specific: true, keyword: "Amala", location: "Lagos, Nigeria", generic_term: "", should_be_recent: false, backup_keywords: "amala,food,yoruba"
@@ -124,7 +128,8 @@ EXAMPLES FOR CLARITY:
     The term "romantic" on its own isn't a good search term. The actual target is a restaurant with a romantic ambiance — a well-defined search entity.
 10. User: "I like horror stories like the Shining by Stephen King, give me similar books"
     → is_valid: true, is_specific: true, keyword: "fictional horror stories", generic_term: "", location: "", should_be_recent: false, backup_keywords: "horror,thriller,stephen king"
-    for books, if the inference is the genre, the keyword should generally capture if its non-fictional or fictional, and the genre of the book, so that it can be used to search for similar books.
+    for books, if the inference is the genre, the keyword should generally capture if its non-fictional or fictional, and the genre of the book, so that it can be used to search for similar books
+    You are able to differentiate between when the user wnats to read a specific book or author, and when they are looking for a genre of books.
 
 ===============================
 MOST IMPORTANT:
