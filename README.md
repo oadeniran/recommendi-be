@@ -1,3 +1,5 @@
+Try Recommendi - [Url](https://recommendi-a12f12b1985c.herokuapp.com/)
+
 # Recommendi Backend API
 
 A FastAPI-based recommendation system that provides intelligent recommendations for movies, TV shows, books, and places using advanced LLM processing and the Qloo API.
