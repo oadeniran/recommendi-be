@@ -77,21 +77,27 @@ STRICT EXTRACTION RULES:
      - "Where in Nairobi can I find vintage bookstores?" →
          keyword = "vintage bookstores", location = "Nairobi, Kenya"
 8. If the user includes a specific venue, building, landmark, or detailed area (e.g., "XYZ Bar", "Eko Hotel", "Lekki Phase 1"), include the full detail in the `location` field.
-
     - Do NOT generalize to just the city or country.
     - Always keep the most specific location mentioned by the user.
     - Example:
         - "I'm at XYZ Bar in Victoria Island, where can I get Italian food?" →
             location = "XYZ Bar in Victoria Island"
-9. If the category is one where genre is relevant (like movies, books, etc.), and the user does not mention any thing specific that can be used to infer the genre, use a popular genre or type as the `generic_term`:
+9. As long as user mentions a specific location (Country, City, State, etc.) in their message, then is_specific should be true, and keyword should be the most applicable experience they are looking for.
+-   E.g., "Cool Plaaces I can go to in New York" → keyword = "reataurant art museum", location = "New York, United States", is_specific = true (Note how each word is singular and captures the essence of the user's request)
+            Here the kewyord is a combination of the most applicable experiences the user is looking for and is associated with that location, and the location is the city mentioned by the user.
+-   E.g., "Going on a vacation to Paris soon, where should I be looking at visiting?" → keyword = "tourist restaurant hotel", location = "Paris, France", is_specific = true (Note how each word is singular and captures the essence of the user's request)
+-           Here the keyword is a combination of the most applicable experiences the user is looking for and is associated with that location, and the location is the city mentioned by the user.
+    Other possible words include club, lounge, bar, restaurant, hotel, tourist attraction, museum, art gallery, etc. depending on the user's request for the places they are looking for.
+    Generally we want Most requests for places to be specific only in very extreme generalized sitsuation where even a country is not provided, so is_specific should be true, and keyword should be the most applicable experience they are looking for and is associated with that location.
+10. If the category is one where genre is relevant (like movies, books, etc.), and the user does not mention any thing specific that can be used to infer the genre, use a popular genre or type as the `generic_term`:
     - E.g., "Any recent movies" → generic_term = "romance", should_be_recent = true
     - E.g., "I want to read a book" → generic_term = "fiction"
     - E.g., "Any good hollywood movies" → generic_term = "action", location = "United States", should_be_recent = false
 -   - E.g., "I want to read a motivational book" → generic_term = "self-help"
-10. If the category is for movies, and all user provided is just an important statement that can be used to infer the genre, then use that important statement to infer the genre and set is_specific = false:
+11. If the category is for movies, and all user provided is just an important statement that can be used to infer the genre, then use that important statement to infer the genre and set is_specific = false:
     - E.g., "I want some superhero movies" → generic_term = "superhero action", is_specific = false Here the action genre is inferred from the superhero context to ensure the keyword is actionable and provides a clear search target.
     - E.g., "I want detective movies" → generic_term = "detective thriller", is_specific = false Here the thriller genre is inferred from the detective context to ensure the keyword is actionable and provides a clear search target.
-11. If the Category is for books, and the user provides a specific author :
+12. If the Category is for books, and the user provides a specific author :
     - E.g., "Some books by Stephen King" → keyword = "Stephen King books", is_specific = true
 
 
@@ -121,11 +127,11 @@ EXAMPLES FOR CLARITY:
 7. User: I'm at XYZ Bar in Victoria Island, where can I get Italian food?
     → is_valid: true, is_specific: true, keyword: "italian food", location: "XYZ Bar in Victoria Island", generic_term: "", should_be_recent: false, backup_keywords: "italian,food,cuisine"
 8. User: "Any cool spots in Nairobi to chill and eat?
-    → is_valid: true, is_specific: false, keyword: "", generic_term: "lounge", location: "Nairobi, Kenya", should_be_recent: false, backup_keywords: "chill,spots,eat" 
-    "cool spots" or "chill" → too vague for search or recommendation
+    → is_valid: true, is_specific: true, keyword: "lounge restaurant hotel", generic_term: "", location: "Nairobi, Kenya", should_be_recent: false, backup_keywords: "chill,spots,eat" 
+    "cool spots" or "chill" → too vague for search or recommendation, lounge restaurant as keyword because it captures the essence of "chill and eat" and is specific true because user already mentioned a location (Nairobi, Kenya) and a specific type of experience (chill and eat).
 9. User: I want somewhere romantic to eat in Paris
-    → is_valid: true, is_specific: false, keyword: "", generic_term: "romantic restaurant", location: "Paris, France", should_be_recent: false, backup_keywords: "romantic,restaurant,eat"
-    The term "romantic" on its own isn't a good search term. The actual target is a restaurant with a romantic ambiance — a well-defined search entity.
+    → is_valid: true, is_specific: true, keyword: "romantic restaurant", generic_term: "", location: "Paris, France", should_be_recent: false, backup_keywords: "romantic,restaurant,eat"
+    The term "romantic" on its own isn't a good search term. The actual target is a restaurant with a romantic ambiance — a well-defined search entity. and the user has specified a location (Paris, France) and a specific type of experience (romantic restaurant), so is_specific should be true.
 10. User: "I like horror stories like the Shining by Stephen King, give me similar books"
     → is_valid: true, is_specific: true, keyword: "fictional horror stories", generic_term: "", location: "", should_be_recent: false, backup_keywords: "horror,thriller,stephen king"
     for books, if the inference is the genre, the keyword should generally capture if its non-fictional or fictional, and the genre of the book, so that it can be used to search for similar books
