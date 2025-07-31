@@ -45,26 +45,6 @@ def get_recommendations_using_details(details, page=None):
             cursor = cursor.limit(RECOMMENDATIONS_PER_PAGE)
 
     recommendations = list(cursor)
-
-    if page is not None and page == 1:
-        if len(recommendations)  == 1:
-            # We are using one recommendation with error in it to denote failuer to fetch so check if we have only one recommendation and it has error
-            if recommendations[0].get('error'):
-                return {
-                    "recommendations": [],
-                    "count": 0,
-                    "page": page,
-                    'has_next_page': False,
-                    'start_next_set': False,
-                    'total_recommendations': 0,
-                    "status_code": 404,
-                    'error' : recommendations[0].get('error', 'No recommendations found')
-                }
-        else:
-            # Anything other than error means we have recommendations but we need tio check if its up to the page limit and if not then we still have to return empty recommendations
-            if len(recommendations) < RECOMMENDATIONS_PER_PAGE:
-                #print("Not enough for the page limit, returning empty recommendations.")
-                return 
     
     # If the recommendations are found but not exactly amount for teh page then reurn None also
     if len(recommendations) < RECOMMENDATIONS_PER_PAGE and page is not None:

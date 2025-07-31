@@ -175,7 +175,7 @@ ENTITIES_FORMATTED = {
 **Purpose**: Main business logic for recommendation generation
 
 **Key Functions**:
-- `generate_alonis_qloo_powered_recommendations()`: Main async recommendation generator
+- `generate_qloo_powered_recommendations()`: Main async recommendation generator
 - `enrich_and_save_recommendations()`: Enhances recommendations with AI context
 - `get_recommendations_by_details()`: Fetches stored recommendations
 

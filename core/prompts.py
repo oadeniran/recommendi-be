@@ -61,6 +61,8 @@ STRICT EXTRACTION RULES:
 4. **Set should_be_recent = true if user uses words like 'new', 'recent', 'latest', '2024', etc.**
 
 5. **If the message is unrelated to the selected category, set is_valid = false and return empty string for keyword, generic_term, and location**
+    Eg If the selection is about Movies but user message is saying something like what can I watch or What book to read then is_valid has to be false,
+    Also if category is about places but user is now asking for A movie recommendation, then is_valid has to be false.
 
 6. **ALWAYS return 'backup_keywords' as comma-separated, single-word alternatives to help broaden the search**
    - E.g., for keyword = "good jollof rice" → backup_keywords = "jollof,rice,food"
@@ -83,8 +85,8 @@ STRICT EXTRACTION RULES:
         - "I'm at XYZ Bar in Victoria Island, where can I get Italian food?" →
             location = "XYZ Bar in Victoria Island"
 9. As long as user mentions a specific location (Country, City, State, etc.) in their message, then is_specific should be true, and keyword should be the most applicable experience they are looking for.
--   E.g., "Cool Plaaces I can go to in New York" → keyword = "reataurant art museum", location = "New York, United States", is_specific = true (Note how each word is singular and captures the essence of the user's request)
-            Here the kewyord is a combination of the most applicable experiences the user is looking for and is associated with that location, and the location is the city mentioned by the user.
+-   E.g., "Cool Places I can go to in New York" → keyword = "reataurant art museum", location = "New York, United States", is_specific = true (Note how each word is singular and captures the essence of the user's request)
+            Here the kewyord is a combination of the most applicable experiences the user is looking for each of them MUST BE SINGULAR and is associated with that location, and the location is the city mentioned by the user.
 -   E.g., "Going on a vacation to Paris soon, where should I be looking at visiting?" → keyword = "tourist restaurant hotel", location = "Paris, France", is_specific = true (Note how each word is singular and captures the essence of the user's request)
 -           Here the keyword is a combination of the most applicable experiences the user is looking for and is associated with that location, and the location is the city mentioned by the user.
     Other possible words include club, lounge, bar, restaurant, hotel, tourist attraction, museum, art gallery, etc. depending on the user's request for the places they are looking for.
@@ -99,6 +101,27 @@ STRICT EXTRACTION RULES:
     - E.g., "I want detective movies" → generic_term = "detective thriller", is_specific = false Here the thriller genre is inferred from the detective context to ensure the keyword is actionable and provides a clear search target.
 12. If the Category is for books, and the user provides a specific author :
     - E.g., "Some books by Stephen King" → keyword = "Stephen King books", is_specific = true
+
+================================
+CORE REASONING EXAMPLES:
+================================
+
+1. Example on how to handle a user message that is not related to the selected category:
+    User: "Places in Frace that are good for a vacation" selected category: Movies
+        → is_valid: false, is_specific: false, keyword: "", generic_term: "", location: "", should_be_recent: false, backup_keywords: ""
+        Reasoning: The user is asking about places in France, which is unrelated to the Movies category. Therefore, is_valid is false.
+2. Example on how to correctly decouple a user message and extract the relevant information:
+    User: "My friend and his girlfriend are traveling to Paris next week for the first time. They're a young couple who love romantic spots, street art, and trying out new cafes. 
+    I want to suggest some really cool, lesser-known places in Paris for them to visit—somewhere fun, not too touristy, and with a nice local vibe. What do you recommend?"
+    selected category: Places
+        → is_valid: true Because the user is asking for recommendations related to places in Paris, which is relevant to the Places category.
+        → is_specific: true, Because the user is asking for specific recommendations in Paris And already mentioned a location (Paris, France) and also includes specific interests (romantic spots, street art, cafes).
+        → keyword: "romantic restaurant cinema cafe street art", Because the user is looking for specific types of places (romantic, street art, cafes) in Paris.ALL these words are singular and capture the essence of the user's request.
+        → generic_term: "", Because the user has specified a specific type of experience they are looking for, so generic_term is not needed.
+        → location: "Paris, France", Because the user has specified a location (Paris, France).
+        → should_be_recent: false, Because the user did not specify that they want recent recommendations.
+        → backup_keywords: "romantic,cafes,street art", Because these are relevant keywords that can be used to broaden the search if needed.
+        Reasoning: The user is asking for specific recommendations in Paris that cater to a young couple's interests. The keyword captures the essence of their request, and the location is clearly specified.
 
 
 ===============================

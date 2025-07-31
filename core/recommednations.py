@@ -5,9 +5,9 @@ from utils import dict_to_string, get_all_location_details, clean_text
 from db import add_recommendation, get_recommendations_using_details, set_session_status_field, get_session_status_field
 from traceback import format_exc
 
-async def generate_alonis_qloo_powered_recommendations(session_id, recommendation_category = "Movies", user_message=None, is_tags_only=False, selected_tag_id=None):
+async def generate_qloo_powered_recommendations(session_id, recommendation_category = "Movies", user_message=None, is_tags_only=False, selected_tag_id=None):
     """
-    Get Alonis recommendations powered by Qloo based on user preferences.
+    Get recommendations powered by Qloo based on user preferences.
     """
     
     recommendations = None
@@ -68,7 +68,7 @@ async def generate_alonis_qloo_powered_recommendations(session_id, recommendatio
             print(f"Recommendation fetch data for user message: {recommendation_fetch_data_for_user_message}")
 
             if not recommendation_fetch_data_for_user_message or recommendation_fetch_data_for_user_message.get('is_valid', False) == False:
-                raise Exception("show_user: Your message does not seem to be a valid one for generating recommendations. Please try again with a valid message.")
+                raise Exception("show_user: Your message does not seem to correlate with this category. Please try again with a valid message for the selected category.")
             
             if 'location' in recommendation_fetch_data_for_user_message and recommendation_fetch_data_for_user_message['location'] != '' and fresh_recommendation_details == True:
                 # If the location is provided, get the location details
@@ -380,7 +380,7 @@ async def get_recommendations_by_details(details, page=1):
 
     if recommendations and recommendations != {} and recommendations.get('start_next_set', False) == True:
         # If the flag to start next set is True then we need to generate more recommendations with same data
-        asyncio.create_task(generate_alonis_qloo_powered_recommendations(
+        asyncio.create_task(generate_qloo_powered_recommendations(
             details.get('session_id'),
             details.get('recommendation_category', 'Movies'),
             details.get('user_message'),
