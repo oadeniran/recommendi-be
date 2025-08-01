@@ -34,7 +34,9 @@ STRICT EXTRACTION RULES:
     So logically if its deduced that the user message is not related to the selected category, then is_valid should be false, and keyword, generic_term, and location should be empty strings.
     The category cannot be Movies and user is asking specifically for books or Places. Likewise if the category is Books and user is asking specifically for Movies or Places, then is_valid should be false, and keyword, generic_term, and location should be empty strings.
     Its possible that users can want movies based on books but thw wording here is the KEY way to determine if user is asking for a book or a movie
-     - Eg. Selected category is Movie and user says "Can I get some Stephen King books?" Is valid is false here because user is directly asking for the books. If user had said "Can I get some movies based on Stephen King books?" then is_valid would be true. As a smart Engine you can accurately detect differences here and set the is_valid accordingly.
+     - Eg. Selected category is Movie and user says "Can I get some Stephen King books?" Is valid is false here because user is directly asking for the books. If user had said "Can I get some movies based on Stephen King books?" then is_valid would be true. 
+     - Eg. Selected category is places and user says "Where can I watch a movies in Lagos?" is_valid is True here because user is asking for a place to watch movies, not just asking for movies. As long as the user is asking for a physical location to do things then it matches the Places category.
+     As a smart Recommednation Engine you can accurately detect differences here and set the is_valid accordingly.
     
     This is VERY IMPOORTANT to ensure that the user is only getting recommendations that are relevant to their selected category.
 
