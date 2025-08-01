@@ -203,6 +203,9 @@ def get_all_location_details(address, country_level=False):
 
 
 def extract_dictionary_from_string(input_string):
+    if input_string is None:
+        print("Error: Input string is None.")
+        return None
     # Regular expression to find dictionary-like structure in the string
     dict_pattern = re.compile(r'\{.*?\}', re.DOTALL)
     

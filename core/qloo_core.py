@@ -7,8 +7,15 @@ ENTITIES= {
     "movies": "urn:entity:movie",
     "tv_shows": "urn:entity:tv_show",
     'books': "urn:entity:book",
-    'destinations': "urn:entity:destination",
+    # 'destinations': "urn:entity:destination",
     'places': "urn:entity:place",
+}
+
+category_entity_explanation = {
+    "movies": "Movies category is anything that is related to movies, such as movie titles, genres, actors, directors, etc. Example asks can be 'Can you recommend some movies?', 'What are the best movies of 2023?', 'I want to watch a movie with Tom Hanks', etc.",
+    "tv_shows": "TV Shows category is anything that is related to TV shows, such as TV show titles, genres, actors, directors, etc. Example asks can be 'Can you recommend some TV shows?', 'What are the best TV shows of 2023?', 'I want to watch a TV show with Tom Hanks', etc.",
+    "books": "Book category is anything that is related to books, such as book titles, genres, authors, publishers, etc. Example asks can be 'Can you recommend some books?', 'What are the best books of 2023?', 'I want to read a book by Stephen King', etc.",
+    'places': "Places Category are anything that is related to going to (or will require going to) a physical location, such as restaurants, hotels, parks, etc. in a any country, state or city. Example asks can be 'Can you recommend where to have fun in Lagos?', 'What are the best hotels in New York?', 'Give me some cool places in Lagos', etc.",
 }
 
 QLOO_HEADER = {
@@ -23,7 +30,9 @@ def get_all_possible_recommendation_categories():
     Returns:
         list: A list of all possible recommendation categories.
     """
-    return list(ENTITIES.keys())
+    return {
+        cat : category_entity_explanation.get(cat, f"No explanation available for {cat}") for cat in ENTITIES.keys()
+    }
 
 def is_country_level(category):
     """

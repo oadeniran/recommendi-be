@@ -67,7 +67,14 @@ async def generate_qloo_powered_recommendations(session_id, recommendation_categ
                 recommendation_fetch_data_for_user_message = recommendation_fetch_data
             print(f"Recommendation fetch data for user message: {recommendation_fetch_data_for_user_message}")
 
-            if not recommendation_fetch_data_for_user_message or recommendation_fetch_data_for_user_message.get('is_valid', False) == False:
+            if not recommendation_fetch_data_for_user_message:
+                raise Exception("Error getting recommendation data")
+            
+            if isinstance(recommendation_fetch_data_for_user_message, str):
+                # If the recommendation fetch data is a string, it means there was an error getting it
+                raise Exception(f"Error getting recommendation data: {recommendation_fetch_data_for_user_message}")
+
+            if recommendation_fetch_data_for_user_message.get('is_valid', False) == False:
                 raise Exception("show_user: Your message does not seem to correlate with this category. Please try again with a valid message for the selected category.")
             
             if 'location' in recommendation_fetch_data_for_user_message and recommendation_fetch_data_for_user_message['location'] != '' and fresh_recommendation_details == True:

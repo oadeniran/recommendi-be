@@ -33,7 +33,13 @@ def get_llm_response(sys_prompt, user_prompt=None):
         return response.choices[0].message.content.strip()
     except Exception as e:
         print(f"Error getting LLM response: {e}")
-        return None
+        if "insufficient" in str(e).lower():
+            return "Error: Insufficient permissions to access the LLM. Please check your API key and permissions."
+        elif "invalid" in str(e).lower():
+            return "Error: Invalid request. Please check the input format and try again."
+        else:
+            print(f"Unexpected error: {e}")
+            return None
     
 async def get_system_prompt_for_user_message(selected_recommendation_category, all_possible_recommendation_categories=None):
     """
@@ -73,6 +79,10 @@ async def get_recommendation_data_from_user_message(user_message, selected_recom
     
     if llm_response:
         # Extract the dictionary from the LLM response
+        if "Error" in llm_response:
+            print(f"Error in LLM response: {llm_response}")
+            return llm_response
+        
         recommendation_data = extract_dictionary_from_string(llm_response)
         if recommendation_data:
             return recommendation_data
