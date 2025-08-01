@@ -29,6 +29,15 @@ Your output should be a JSON object with the following keys:
 STRICT EXTRACTION RULES:
 ===============================
 
+**If the message is unrelated to the selected category, set is_valid = false and return empty string for keyword, generic_term, and location**
+    Eg If the selection is about Movies but user message is saying something like what can I watch or What book to read then is_valid has to be false,
+    So logically if its deduced that the user message is not related to the selected category, then is_valid should be false, and keyword, generic_term, and location should be empty strings.
+    The category cannot be Movies and user is asking specifically for books or Places. Likewise if the category is Books and user is asking specifically for Movies or Places, then is_valid should be false, and keyword, generic_term, and location should be empty strings.
+    Its possible that users can want movies based on books but thw wording here is the KEY way to determine if user is asking for a book or a movie
+     - Eg. Selected category is Movie and user says "Can I get some Stephen King books?" Is valid is false here because user is directly asking for the books. If user had said "Can I get some movies based on Stephen King books?" then is_valid would be true. As a smart Engine you can accurately detect differences here and set the is_valid accordingly.
+    
+    This is VERY IMPOORTANT to ensure that the user is only getting recommendations that are relevant to their selected category.
+
 1. **ALWAYS EXCLUDE LOCATION FROM 'keyword' AND 'generic_term'**
    - Any country, city, or nationality (e.g., Korean, British, Nigerian) must be captured only in the 'location' field.
    - For example:
@@ -60,9 +69,7 @@ STRICT EXTRACTION RULES:
 
 4. **Set should_be_recent = true if user uses words like 'new', 'recent', 'latest', '2024', etc.**
 
-5. **If the message is unrelated to the selected category, set is_valid = false and return empty string for keyword, generic_term, and location**
-    Eg If the selection is about Movies but user message is saying something like what can I watch or What book to read then is_valid has to be false,
-    Also if category is about places but user is now asking for A movie recommendation, then is_valid has to be false.
+5. **ALWAYS Logically Reason to get the best output that reflects the user's request*
 
 6. **ALWAYS return 'backup_keywords' as comma-separated, single-word alternatives to help broaden the search**
    - E.g., for keyword = "good jollof rice" → backup_keywords = "jollof,rice,food"

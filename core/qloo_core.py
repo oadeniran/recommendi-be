@@ -72,11 +72,11 @@ def get_qloo_search_endpoint(entity, query, location=None ,page=1):
     if location is not None and 'max_radius' in location:
         try:
             radius = int(location['max_radius'])
-            raduis_str = f"&filter.radius={radius}"
+            raduis_str = f"&filter.radius={min(radius, 100)}"
         except ValueError:
             print(f"Invalid radius value: {location['max_radius']}. Using default radius of 900 km.")
-            raduis_str = "&filter.radius=900"
-            
+            raduis_str = "&filter.radius=55"
+
     sort_type = "match" if "book" in entity else "popularity"
     return f"{QLOO_API_URL}/search?query={query}&types={entity}{location_str}&page={page}&sort_by={sort_type}{raduis_str}"
 
