@@ -12,8 +12,8 @@ description = f"Recommendi API for {appENV} Documentation"
 
 tags_metadata = [
     {
-        "name": "Recommendi APIs",
-        "description": "Endpoints to power recommendi",
+        "name": "Recommendi APIs blah blah",
+        "description": "Endpoints to power recommendi blah blah",
     }
 ]
 
